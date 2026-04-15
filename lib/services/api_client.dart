@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://dairygo-env.eba-pdqh7svg.ap-south-1.elasticbeanstalk.com/api';
   static String? _token;
 
   static Future<void> saveToken(String token) async {
