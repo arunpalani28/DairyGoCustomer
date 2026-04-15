@@ -1,0 +1,49 @@
+name: Flutter Build APK
+
+# This triggers the build every time you push to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Pull the code from your repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Java (Required for Android builds)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      # 3. Set up Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          # This caches the flutter SDK to make future builds faster
+          cache: true
+
+      # 4. Get Flutter dependencies (your pubspec.yaml packages)
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Build the APK (Standard Release version)
+      - name: Build APK
+        run: flutter build apk --release
+
+      # 6. Upload the APK as an "Artifact" so you can download it
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dairygo_customer
+          path: build/app/outputs/flutter-apk/app-release.apk
