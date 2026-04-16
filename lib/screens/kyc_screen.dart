@@ -28,6 +28,42 @@ class _KycFormState extends State<KycFormScreen> {
     super.dispose();
   }
 
+// ✅ NEW: load existing KYC
+  @override
+  void initState() {
+    super.initState();
+    _loadKyc();
+  }
+
+  Future<void> _loadKyc() async {
+    setState(() => _loading = true);
+
+    try {
+      final data = await ApiClient.get('/kyc/me');
+final res = data['data'];
+      if (res != null && res is Map<String, dynamic>) {
+        setState(() {
+          _nameCtrl.text     = res['fullName'] ?? '';
+          _altCtrl.text      = res['alternateMobile'] ?? '';
+          _waCtrl.text       = res['whatsappNumber'] ?? '';
+          _addrCtrl.text     = res['address'] ?? '';
+          _landmarkCtrl.text = res['landmark'] ?? '';
+          _cityCtrl.text     = res['city'] ?? '';
+          _pinCtrl.text      = res['pincode'] ?? '';
+          _notesCtrl.text    = res['notes'] ?? '';
+
+          _freq    = res['deliveryFrequency'] ?? 'MORNING';
+          _time    = res['preferredTime'] ?? '6:00 AM – 7:00 AM';
+          _advance = (res['advancePayment'] ?? 500).toDouble();
+        });
+      }
+    } catch (e) {
+      debugPrint("No existing KYC or error: $e");
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty || _addrCtrl.text.trim().isEmpty || _cityCtrl.text.trim().isEmpty) {
       setState(() => _error = 'Please fill all required fields'); return;
@@ -152,17 +188,17 @@ class _KycFormState extends State<KycFormScreen> {
     const SizedBox(height: 8),
     Row(children: [
       _freqBtn('MORNING', '🌅 Morning'),
-      const SizedBox(width: 8),
-      _freqBtn('EVENING', '🌙 Evening'),
-      const SizedBox(width: 8),
-      _freqBtn('BOTH', '⏰ Both'),
+      // const SizedBox(width: 8),
+      // _freqBtn('EVENING', '🌙 Evening'),
+      // const SizedBox(width: 8),
+      // _freqBtn('BOTH', '⏰ Both'),
     ]),
     const SizedBox(height: 16),
     _label('Preferred Time Slot'),
     const SizedBox(height: 8),
     Wrap(spacing: 8, runSpacing: 8, children: [
       '6:00 AM – 7:00 AM', '7:00 AM – 8:00 AM',
-      '5:00 PM – 6:00 PM', '6:00 PM – 7:00 PM',
+      // '5:00 PM – 6:00 PM', '6:00 PM – 7:00 PM',
     ].map((t) => GestureDetector(
       onTap: () => setState(() => _time = t),
       child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -183,7 +219,7 @@ class _KycFormState extends State<KycFormScreen> {
       const Text('This amount will be fully refunded after your first month\'s bill is settled.',
           style: TextStyle(fontSize: 11, color: kOrange, height: 1.4)),
       const SizedBox(height: 8),
-      Row(children: [0.0, 250.0, 500.0, 1000.0].map((v) => Expanded(child: Padding(
+      Row(children: [0.0, 500.0].map((v) => Expanded(child: Padding(
         padding: const EdgeInsets.only(right: 6),
         child: GestureDetector(
           onTap: () => setState(() => _advance = v),

@@ -3,6 +3,34 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_client.dart';
 import '../models/models.dart';
 import '../widgets/theme.dart';
+import 'package:dairygo_customer/screens/splash_login.dart';
+class CalDay {
+  final int deliveryId; // 0 if no DB record yet
+  final String dateKey; // yyyy-MM-dd
+  String status;        // PENDING | DELIVERED | PAUSED | MISSED
+  int quantityMl;
+  final String slot;
+
+  CalDay({
+    required this.deliveryId,
+    required this.dateKey,
+    required this.status,
+    required this.quantityMl,
+    required this.slot,
+  });
+
+  CalDay.fromJson(Map<String, dynamic> j)
+      : deliveryId = j['id'] ?? 0,
+        dateKey    = j['deliveryDate'] ?? '',
+        status     = j['status'] ?? 'PENDING',
+        quantityMl = j['quantityMl'] ?? 500,
+        slot       = j['deliverySlot'] ?? 'MORNING';
+
+  bool get isDelivered => status == 'DELIVERED';
+  bool get isPaused    => status == 'PAUSED';
+  bool get isPending   => status == 'PENDING';
+  bool get hasBacking  => deliveryId > 0; // has a real DB row
+}
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onCartUpdate;
@@ -19,7 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<RecentOrder> _recentOrders = [];
   bool _loading = true;
   String? _error;
-
+Map<String, CalDay> _newDays = {};
+Set<String> _pausedDates = {};
   @override void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
@@ -33,7 +62,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ApiClient.get('/customer/calendar?from=$from&to=$to'),
         ApiClient.get('/customer/products'),
         ApiClient.get('/customer/orders'),
+      ApiClient.get('/customer/pauses'),
       ]);
+       final calList = results[1]['data'] as List? ?? [];
+final pauseList = results[4]['data'] as List? ?? [];
+
+/// calendar map
+final tempDays = <String, CalDay>{};
+for (final e in calList) {
+  final cd = CalDay.fromJson(e as Map<String, dynamic>);
+  tempDays[cd.dateKey] = cd;
+}
+
+final tempPaused = <String>{};
+
+for (final e in pauseList) {
+  final from = DateTime.parse(e['fromDate']);
+  final to = DateTime.parse(e['toDate']);
+
+  for (DateTime d = from;
+      !d.isAfter(to);
+      d = d.add(const Duration(days: 1))) {
+    tempPaused.add(_fmt(d)); // store as yyyy-MM-dd
+  }
+}
+
+setState(() {
+  _newDays = tempDays;
+  _pausedDates = tempPaused;
+});
       setState(() {
         _profile = UserProfile.fromJson(results[0]['data']);
         _weekDeliveries = (results[1]['data'] as List).map((e) => DeliveryDay.fromJson(e)).toList();
@@ -91,52 +148,213 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader() => Container(
-    color: kPrimary,
-    child: SafeArea(bottom: false, child: Padding(
+  color: kPrimary,
+  child: SafeArea(
+    bottom: false,
+    child: Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      child: Column(children: [
-        Row(children: [
-          KAvatar(initials: _profile?.initials ?? 'RK'), const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_profile?.name ?? 'Welcome!', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
-            Text(_profile?.zone ?? 'DairyGo Madurai', style: const TextStyle(fontSize: 11, color: Color(0xFF90CAF9))),
-          ])),
-          const Icon(Icons.notifications_rounded, color: Colors.white, size: 22),
-        ]),
-        const SizedBox(height: 14),
-        Container(
-          decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.all(14),
-          child: Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('LIVE WALLET', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF5C8FCB), letterSpacing: 0.6)),
-              const SizedBox(height: 3),
-              Text('₹${_profile?.walletBalance.toStringAsFixed(0) ?? '0'}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kPrimary)),
-              const Text('Available credits', style: TextStyle(fontSize: 9, color: kTextLight)),
-              const SizedBox(height: 5),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: kPrimaryLt, borderRadius: BorderRadius.circular(20)),
-                child: const Text('Auto-recharge ON', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: kPrimary))),
-            ])),
-            Container(width: 1, height: 72, color: kPrimaryLt, margin: const EdgeInsets.symmetric(horizontal: 14)),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('KYC STATUS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF5C8FCB), letterSpacing: 0.6)),
-              const SizedBox(height: 3),
-              Row(children: [
-                Icon(_profile?.kycStatus == 'VERIFIED' ? Icons.verified_rounded : Icons.pending_rounded,
-                    size: 18, color: _profile?.kycStatus == 'VERIFIED' ? kGreen : kOrange),
-                const SizedBox(width: 5),
-                Text(_profile?.kycStatus ?? '—', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                    color: _profile?.kycStatus == 'VERIFIED' ? kGreen : kOrange)),
-              ]),
-              const SizedBox(height: 4),
-              if (_profile?.zone != null && _profile!.zone.isNotEmpty)
-                Text(_profile!.zone, style: const TextStyle(fontSize: 9, color: kTextLight)),
-            ])),
-          ]),
-        ),
-      ]),
-    )),
-  );
+      child: Column(
+        children: [
+          Row(
+            children: [
+              KAvatar(initials: _profile?.initials ?? 'RK'),
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _profile?.name ?? 'Welcome!',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      _profile?.zone ?? 'DairyGo Madurai',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF90CAF9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🔔 Notification Icon
+              IconButton(
+                icon: const Icon(Icons.notifications_rounded,
+                    color: Colors.white, size: 22),
+                onPressed: () {
+                  // TODO: Handle notifications
+                },
+              ),
+
+              // 🚪 Logout Icon
+              IconButton(
+                icon: const Icon(Icons.logout,
+                    color: Colors.white, size: 22),
+                onPressed: () async {
+                  final confirm = await showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Logout'),
+                      content:
+                          const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, true),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await ApiClient.clearToken();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>  const SplashScreen()),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          Container(
+            decoration: BoxDecoration(
+              color: kCard,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'LIVE WALLET',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF5C8FCB),
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '₹${_profile?.walletBalance.toStringAsFixed(0) ?? '0'}',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimary,
+                        ),
+                      ),
+                      // const Text(
+                      //   'Available credits',
+                      //   style:
+                      //       TextStyle(fontSize: 9, color: kTextLight),
+                      // ),
+                      // const SizedBox(height: 5),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(
+                      //       horizontal: 8, vertical: 2),
+                      //   decoration: BoxDecoration(
+                      //     color: kPrimaryLt,
+                      //     borderRadius: BorderRadius.circular(20),
+                      //   ),
+                      //   child: const Text(
+                      //     'Auto-recharge ON',
+                      //     style: TextStyle(
+                      //       fontSize: 8,
+                      //       fontWeight: FontWeight.w700,
+                      //       color: kPrimary,
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+
+                Container(
+                  width: 1,
+                  height: 72,
+                  color: kPrimaryLt,
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 14),
+                ),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'KYC STATUS',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF5C8FCB),
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            _profile?.kycStatus == 'VERIFIED'
+                                ? Icons.verified_rounded
+                                : Icons.pending_rounded,
+                            size: 18,
+                            color: _profile?.kycStatus == 'VERIFIED'
+                                ? kGreen
+                                : kOrange,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _profile?.kycStatus ?? '—',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  _profile?.kycStatus == 'VERIFIED'
+                                      ? kGreen
+                                      : kOrange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      if (_profile?.zone != null &&
+                          _profile!.zone.isNotEmpty)
+                        Text(
+                          _profile!.zone,
+                          style: const TextStyle(
+                              fontSize: 9, color: kTextLight),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
 
  Widget _quickActions() {
   final items = [
@@ -207,42 +425,133 @@ class _HomeScreenState extends State<HomeScreen> {
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Full Cream Milk — ${today?.quantityMl ?? 500}ml', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kTextDark)),
         const SizedBox(height: 2),
-        const Text('Expected 6:30 AM · Assigned to Ravi', style: TextStyle(fontSize: 10, color: kTextMid)),
-        const SizedBox(height: 6),
+        Text(
+  '${today?.driverName != '' ? 'Assigned to ${today!.driverName}' : ''}', 
+  style: TextStyle(fontSize: 10, color: kTextMid),
+),
+const SizedBox(height: 6),
         KStatusBadge(label: status, color: statusColor, bg: statusBg),
       ])),
     ]));
   }
 
-  Widget _weekStrip() {
-    final now = DateTime.now();
-    final days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    return SizedBox(height: 84, child: ListView.builder(
-      scrollDirection: Axis.horizontal, itemCount: 7,
-      itemBuilder: (ctx, i) {
-        final d = now.add(Duration(days: i));
-        final isToday = i == 0;
-        final locked = i == 1 && now.hour >= 16;
-        final dd = i < _weekDeliveries.length ? _weekDeliveries[i] : null;
-        return Container(width: 55, margin: const EdgeInsets.only(right: 8),
+  // Widget _weekStrip() {
+  //   final now = DateTime.now();
+  //   final days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  //   return SizedBox(height: 84, child: ListView.builder(
+  //     scrollDirection: Axis.horizontal, itemCount: 7,
+  //     itemBuilder: (ctx, i) {
+  //       final d = now.add(Duration(days: i));
+  //       final isToday = i == 0;
+  //       final locked = i == 1 && now.hour >= 16;
+  //       final dd = i < _weekDeliveries.length ? _weekDeliveries[i] : null;
+  //       return Container(width: 55, margin: const EdgeInsets.only(right: 8),
+  //         decoration: BoxDecoration(
+  //           color: isToday ? kPrimaryLt : locked ? const Color(0xFFF5F7FA) : kCard,
+  //           borderRadius: BorderRadius.circular(14),
+  //           border: Border.all(color: isToday ? kPrimary : kBorder, width: isToday ? 2 : 1)),
+  //         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+  //           Text(days[d.weekday % 7], style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: kTextLight)),
+  //           const SizedBox(height: 2),
+  //           Text('${d.day}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kTextDark)),
+  //           const SizedBox(height: 4),
+  //           locked ? const Icon(Icons.lock_rounded, color: kTextLight, size: 13)
+  //               : dd?.status == 'DELIVERED' ? const Icon(Icons.check_circle_rounded, color: kGreen, size: 15)
+  //               : dd?.status == 'PAUSED' ? const Icon(Icons.pause_circle_rounded, color: kOrange, size: 15)
+  //               : const Text('🥛', style: TextStyle(fontSize: 14)),
+  //         ]),
+  //       );
+  //     },
+  //   ));
+  // }
+
+
+Widget _weekStrip() {
+  final now = DateTime.now();
+  final weekStart = _getWeekStart(now); // Monday
+  final currentMonth = now.month;
+
+  final days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+  return SizedBox(
+    height: 84,
+    child: ListView(
+      scrollDirection: Axis.horizontal,
+      children: List.generate(7, (i) {
+        final d = weekStart.add(Duration(days: i));
+
+        /// ❌ Skip next month dates
+        if (d.month != currentMonth) {
+          return const SizedBox.shrink();
+        }
+
+        final dateKey = _fmt(d);
+        final isPaused = _pausedDates.contains(dateKey);
+        final cd = _newDays[dateKey];
+
+        final isToday = _fmt(d) == _fmt(now);
+        final isTomorrow =
+            _fmt(d) == _fmt(now.add(const Duration(days: 1)));
+
+        final locked = isTomorrow && now.hour >= 16;
+
+        /// 🎨 UI colors
+        Color bgColor = kCard;
+        Color borderColor = kBorder;
+
+        if (isPaused) {
+          bgColor = kOrangeLt;
+          borderColor = kOrange;
+        } else if (locked) {
+          bgColor = const Color(0xFFF5F7FA);
+        } else if (isToday) {
+          borderColor = kPrimary;
+        }
+
+        return Container(
+          width: 55,
+          margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
-            color: isToday ? kPrimaryLt : locked ? const Color(0xFFF5F7FA) : kCard,
+            color: bgColor,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isToday ? kPrimary : kBorder, width: isToday ? 2 : 1)),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(days[d.weekday % 7], style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: kTextLight)),
-            const SizedBox(height: 2),
-            Text('${d.day}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kTextDark)),
-            const SizedBox(height: 4),
-            locked ? const Icon(Icons.lock_rounded, color: kTextLight, size: 13)
-                : dd?.status == 'DELIVERED' ? const Icon(Icons.check_circle_rounded, color: kGreen, size: 15)
-                : dd?.status == 'PAUSED' ? const Icon(Icons.pause_circle_rounded, color: kOrange, size: 15)
-                : const Text('🥛', style: TextStyle(fontSize: 14)),
-          ]),
+            border: Border.all(
+              color: borderColor,
+              width: isToday ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(days[i],
+                  style: const TextStyle(fontSize: 9)),
+
+              Text('${d.day}',
+                  style: const TextStyle(fontSize: 13)),
+
+              const SizedBox(height: 4),
+
+              /// ✅ PRIORITY
+              if (isPaused)
+                const Icon(Icons.pause_circle_rounded,
+                    color: kOrange, size: 15)
+              else if (locked)
+                const Icon(Icons.lock_rounded,
+                    color: kTextLight, size: 13)
+              else if (cd?.status == 'DELIVERED')
+                const Icon(Icons.check_circle_rounded,
+                    color: kGreen, size: 15)
+              else
+                const Text('🥛', style: TextStyle(fontSize: 14)),
+            ],
+          ),
         );
-      },
-    ));
-  }
+      }),
+    ),
+  );
+}
+DateTime _getWeekStart(DateTime date) {
+  return date.subtract(Duration(days: date.weekday - 1));
+}
 
   Widget _miniProductRow() => SizedBox(height: 122, child: ListView.builder(
     scrollDirection: Axis.horizontal, itemCount: _products.length,

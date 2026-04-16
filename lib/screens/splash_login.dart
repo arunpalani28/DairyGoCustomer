@@ -54,6 +54,7 @@ class _LoginState extends State<LoginScreen> {
   String? _error;
   int _resendSecs = 0;
   Timer? _timer;
+  String? _otpNumber;
 
   @override void dispose() { _mobileCtrl.dispose(); _otpCtrl.dispose(); _timer?.cancel(); super.dispose(); }
 
@@ -62,8 +63,8 @@ class _LoginState extends State<LoginScreen> {
     if (mobile.length < 10) { setState(() => _error = 'Enter a valid 10-digit mobile number'); return; }
     setState(() { _loading = true; _error = null; });
     try {
-      await ApiClient.post('/auth/send-otp', {'mobile': mobile});
-      setState(() { _otpSent = true; _loading = false; _resendSecs = 30; });
+     final res= await ApiClient.post('/auth/send-otp', {'mobile': mobile});
+      setState(() { _otpNumber=res["data"];_otpSent = true; _loading = false; _resendSecs = 30; });
       _startTimer();
     } catch (e) {
       setState(() { _error = e.toString().replaceAll('Exception: ', ''); _loading = false; });
@@ -119,7 +120,7 @@ class _LoginState extends State<LoginScreen> {
           Text(_otpSent ? 'Enter OTP' : 'Sign In',
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kTextDark)),
           SizedBox(height: 4),
-          Text(_otpSent ? 'OTP sent to ${_mobileCtrl.text}' : 'Enter your mobile number',
+          Text(_otpSent ? '' : 'Enter your mobile number',
               style: const TextStyle(fontSize: 13, color: kTextMid)),
           const SizedBox(height: 24),
           if (!_otpSent) ...[
@@ -151,7 +152,7 @@ class _LoginState extends State<LoginScreen> {
               child: Row(children: [
                 const Icon(Icons.check_circle_rounded, color: kGreen, size: 16),
                 const SizedBox(width: 8),
-                Text('OTP sent to +91 ${_mobileCtrl.text}', style: const TextStyle(fontSize: 12, color: kGreen, fontWeight: FontWeight.w600)),
+                Text('OTP is ${_otpNumber}', style: const TextStyle(fontSize: 12, color: kGreen, fontWeight: FontWeight.w600)),
               ]),
             ),
             const SizedBox(height: 14),
@@ -197,7 +198,7 @@ class _LoginState extends State<LoginScreen> {
             )),
           ],
           const SizedBox(height: 16),
-          Center(child: Text('Demo: use 9000000002 (Customer)', style: TextStyle(fontSize: 11, color: kTextLight))),
+          // Center(child: Text('Demo: use 9000000002 (Customer)', style: TextStyle(fontSize: 11, color: kTextLight))),
         ])),
       )),
     ])),

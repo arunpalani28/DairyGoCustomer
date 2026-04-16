@@ -46,6 +46,7 @@ class DeliveryDay {
   final int quantityMl;
   final bool isExtra;
   final double extraFee;
+  final String driverName;
 
   DeliveryDay.fromJson(Map<String, dynamic> j)
       : id = j['id'] ?? 0,
@@ -53,7 +54,8 @@ class DeliveryDay {
         status = j['status'] ?? 'PENDING',
         quantityMl = j['quantityMl'] ?? 500,
         isExtra = j['isExtra'] ?? false,
-        extraFee = (j['extraFee'] as num?)?.toDouble() ?? 0.0;
+        extraFee = (j['extraFee'] as num?)?.toDouble() ?? 0.0,
+        driverName = j['driverName'] ?? '';
 }
 
 class Product {
