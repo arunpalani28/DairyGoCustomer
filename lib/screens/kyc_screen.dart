@@ -6,7 +6,94 @@ class KycFormScreen extends StatefulWidget {
   const KycFormScreen({super.key});
   @override State<KycFormScreen> createState() => _KycFormState();
 }
+class KTextField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final bool readOnly;
+  final Function(String)? onChanged;
+  final Widget? prefix;
+  final Widget? suffix;
+  final int? maxLength;
 
+  const KTextField({
+    super.key,
+    required this.label,
+    required this.controller,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.readOnly = false,
+    this.onChanged,
+    this.prefix,
+    this.suffix,
+    this.maxLength,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        onChanged: onChanged,
+        maxLength: maxLength,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: kTextDark,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(
+            fontSize: 12,
+            color: kTextLight,
+            fontWeight: FontWeight.w500,
+          ),
+
+          prefixIcon: prefix,
+          suffixIcon: suffix,
+
+          filled: true,
+          fillColor: const Color(0xFFF7F9FC),
+
+          counterText: '',
+
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kBorder),
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kBorder),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kPrimary, width: 1.5),
+          ),
+
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red),
+          ),
+
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          ),
+        ),
+      ),
+    );
+  }
+}
 class _KycFormState extends State<KycFormScreen> {
   final _nameCtrl     = TextEditingController();
   final _altCtrl      = TextEditingController();
@@ -16,6 +103,7 @@ class _KycFormState extends State<KycFormScreen> {
   final _cityCtrl     = TextEditingController();
   final _pinCtrl      = TextEditingController();
   final _notesCtrl    = TextEditingController();
+  final _zoneCtrl    = TextEditingController();
   String _freq = 'MORNING';
   String _time = '6:00 AM – 7:00 AM';
   double _advance = 500;
@@ -34,6 +122,32 @@ class _KycFormState extends State<KycFormScreen> {
     super.initState();
     _loadKyc();
   }
+Future<void> _fetchPincodeDetails(
+  String pincode,
+  Function(String district, String zone) onSuccess,
+) async {
+  try {
+    final res = await ApiClient.getExternal(
+      'https://api.postalpincode.in/pincode/$pincode',
+    );
+
+    final data = res[0];
+
+    if (data['Status'] == 'Success') {
+      final postOffice = data['PostOffice'][0];
+
+      final district = postOffice['District'] ?? '';
+
+      /// 🔥 Zone from UI map
+      final zone = postOffice['Block'] ?? '';
+      print(district);
+
+      onSuccess(district, zone);
+    }
+  } catch (e) {
+    debugPrint("Pincode fetch error: $e");
+  }
+}
 
   Future<void> _loadKyc() async {
     setState(() => _loading = true);
@@ -49,6 +163,7 @@ final res = data['data'];
           _addrCtrl.text     = res['address'] ?? '';
           _landmarkCtrl.text = res['landmark'] ?? '';
           _cityCtrl.text     = res['city'] ?? '';
+          _zoneCtrl.text     = res['zone'] ?? '';
           _pinCtrl.text      = res['pincode'] ?? '';
           _notesCtrl.text    = res['notes'] ?? '';
 
@@ -78,6 +193,7 @@ final res = data['data'];
         'landmark': _landmarkCtrl.text.trim(),
         'city': _cityCtrl.text.trim(),
         'pincode': _pinCtrl.text.trim(),
+        'zone': _zoneCtrl.text.trim(),
         'deliveryFrequency': _freq,
         'preferredTime': _time,
         'advancePayment': _advance,
@@ -91,7 +207,7 @@ final res = data['data'];
           const SizedBox(height: 14),
           const Text('KYC Submitted!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kTextDark)),
           const SizedBox(height: 8),
-          const Text('Our team will call you shortly to verify your address and complete setup. Advance payment of ₹500 will be refunded after your first month bill.',
+          const Text('Our team will call you shortly to verify your address and complete setup',
               textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: kTextMid, height: 1.6)),
           const SizedBox(height: 20),
           KPrimaryButton(label: 'Got it!', onTap: () {
@@ -174,11 +290,54 @@ final res = data['data'];
     const SizedBox(height: 14),
     KTextField(label: 'Landmark', controller: _landmarkCtrl),
     const SizedBox(height: 14),
-    Row(children: [
-      Expanded(child: KTextField(label: 'City *', controller: _cityCtrl)),
-      const SizedBox(width: 12),
-      Expanded(child: KTextField(label: 'Pincode', controller: _pinCtrl, keyboardType: TextInputType.number)),
-    ]),
+    Row(
+  children: [
+    /// PINCODE
+    Expanded(
+      child: KTextField(
+        label: 'Pincode',
+        controller: _pinCtrl,
+        keyboardType: TextInputType.number,
+              maxLength: 6,
+              prefix: const Icon(Icons.pin_drop, size: 18, color: kPrimary),
+        onChanged: (val) {
+          if (val.length == 6) {
+            _fetchPincodeDetails(val, (district, zone) {
+              setState(() { // ✅ NOT setSheetState
+                _cityCtrl.text = district;
+                _zoneCtrl.text = zone;
+              });
+            });
+          }
+        },
+      ),
+    ),
+
+   ],
+),
+ Row(
+  children: [
+ const SizedBox(width: 14),
+
+    /// CITY
+    Expanded(
+      child: KTextField(
+        label: 'City *',
+        controller: _cityCtrl,
+              readOnly: true,
+      ),
+    ),
+
+    const SizedBox(width: 14),
+
+    /// ZONE
+    Expanded(
+      child: KTextField(
+        label: 'Zone *',
+        controller: _zoneCtrl,
+      ),
+    ),
+  ])
   ];
 
   List<Widget> _step2() => [

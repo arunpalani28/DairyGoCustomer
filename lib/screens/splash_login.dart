@@ -4,6 +4,103 @@ import '../services/api_client.dart';
 import '../widgets/theme.dart';
 import 'shell.dart';
 import 'kyc_screen.dart';
+class KTextField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final bool readOnly;
+  final Function(String)? onChanged;
+  final Widget? prefix;
+  final int? maxLength;
+
+  const KTextField({
+    super.key,
+    required this.label,
+    required this.controller,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.readOnly = false,
+    this.onChanged,
+    this.prefix,
+    this.maxLength,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        onChanged: onChanged,
+        maxLength: maxLength,
+
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: kTextDark,
+        ),
+
+        decoration: InputDecoration(
+          labelText: label,
+
+          /// 🔷 LABEL STYLE
+          labelStyle: const TextStyle(
+            fontSize: 12,
+            color: kTextMid,
+            fontWeight: FontWeight.w500,
+          ),
+
+          /// 🔷 PREFIX ICON
+          prefixIcon: prefix,
+
+          /// 🔷 BACKGROUND
+          filled: true,
+          fillColor: const Color(0xFFF9FBFF),
+
+          /// 🔷 REMOVE COUNTER (0/6)
+          counterText: '',
+
+          /// 🔷 PADDING
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+
+          /// 🔷 BORDERS
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kBorder),
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kBorder),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kPrimary, width: 1.4),
+          ),
+
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kRed),
+          ),
+
+          /// 🔷 HINT (optional)
+          hintStyle: const TextStyle(
+            fontSize: 12,
+            color: kTextLight,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ── SPLASH ────────────────────────────────────────────────────────────────────
 class SplashScreen extends StatefulWidget {

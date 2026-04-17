@@ -426,8 +426,9 @@ setState(() {
         Text('Full Cream Milk — ${today?.quantityMl ?? 500}ml', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kTextDark)),
         const SizedBox(height: 2),
         Text(
-  '${today?.driverName != '' ? 'Assigned to ${today!.driverName}' : ''}', 
-  style: TextStyle(fontSize: 10, color: kTextMid),
+  (today?.driverName ?? '').isNotEmpty
+      ? 'Assigned to ${today!.driverName}'
+      : '',
 ),
 const SizedBox(height: 6),
         KStatusBadge(label: status, color: statusColor, bg: statusBg),

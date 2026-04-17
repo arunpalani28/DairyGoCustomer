@@ -69,4 +69,9 @@ class ApiClient {
     if (res.statusCode >= 400) throw Exception(body['message'] ?? 'Server error');
     return body;
   }
+
+   static Future<dynamic> getExternal(String url) async {
+  final response = await http.get(Uri.parse(url));
+  return jsonDecode(response.body);
+}
 }
