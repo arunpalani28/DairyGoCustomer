@@ -414,27 +414,76 @@ setState(() {
   );
 }
 
- Widget _todayCard() {
-    final today = _weekDeliveries.isNotEmpty ? _weekDeliveries.first : null;
-    final status = today?.status ?? 'PENDING';
-    final statusColor = status == 'DELIVERED' ? kGreen : status == 'PAUSED' ? kOrange : kPrimary;
-    final statusBg = status == 'DELIVERED' ? kGreenLt : status == 'PAUSED' ? kOrangeLt : kPrimaryLt;
-    return KCard(child: Row(children: [
-      Container(width: 48, height: 48, decoration: BoxDecoration(color: kPrimaryLt, borderRadius: BorderRadius.circular(13)), child: const Center(child: Text('🥛', style: TextStyle(fontSize: 24)))),
-      const SizedBox(width: 12),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Full Cream Milk — ${today?.quantityMl ?? 500}ml', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kTextDark)),
-        const SizedBox(height: 2),
-        Text(
-  (today?.driverName ?? '').isNotEmpty
-      ? 'Assigned to ${today!.driverName}'
-      : '',
-),
-const SizedBox(height: 6),
-        KStatusBadge(label: status, color: statusColor, bg: statusBg),
-      ])),
-    ]));
-  }
+Widget _todayCard() {
+  final today = _weekDeliveries.isNotEmpty ? _weekDeliveries.first : null;
+
+  final status = today?.status ?? 'PENDING';
+
+  final statusColor = status == 'DELIVERED'
+      ? kGreen
+      : status == 'PAUSED'
+          ? kOrange
+          : status == 'CANCELLED'
+              ? kRed
+              : kPrimary;
+
+  final statusBg = status == 'DELIVERED'
+      ? kGreenLt
+      : status == 'PAUSED'
+          ? kOrangeLt
+          : status == 'CANCELLED'
+              ? kRedLt
+              : kPrimaryLt;
+
+  return KCard(
+    child: Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: kPrimaryLt,
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: const Center(
+            child: Text('🥛', style: TextStyle(fontSize: 24)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Full Cream Milk — ${today?.quantityMl ?? 500}ml',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: kTextDark,
+                ),
+              ),
+              const SizedBox(height: 2),
+
+              if ((today?.driverName ?? '').isNotEmpty)
+                Text(
+                  'Assigned to ${today!.driverName}',
+                  style: const TextStyle(fontSize: 11, color: kTextMid),
+                ),
+
+              const SizedBox(height: 6),
+
+              KStatusBadge(
+                label: status,
+                color: statusColor,
+                bg: statusBg,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // Widget _weekStrip() {
   //   final now = DateTime.now();
@@ -505,7 +554,13 @@ Widget _weekStrip() {
           borderColor = kOrange;
         } else if (locked) {
           bgColor = const Color(0xFFF5F7FA);
-        } else if (isToday) {
+        } else if (cd?.status == 'DELIVERED'){
+          bgColor = kGreenLt;
+          borderColor = const Color.fromARGB(255, 227, 253, 232);
+        }else if (cd?.status == 'CANCELLED'){
+          bgColor = kRedLt;
+          borderColor = kRed;
+        }else if (isToday) {
           borderColor = kPrimary;
         }
 
@@ -541,6 +596,9 @@ Widget _weekStrip() {
               else if (cd?.status == 'DELIVERED')
                 const Icon(Icons.check_circle_rounded,
                     color: kGreen, size: 15)
+              else if (cd?.status == 'CANCELLED')
+                const Icon(Icons.cancel_rounded,
+                    color: kRed, size: 15)
               else
                 const Text('🥛', style: TextStyle(fontSize: 14)),
             ],

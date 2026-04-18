@@ -5,7 +5,7 @@ import '../models/models.dart';
 import '../widgets/theme.dart';
 
 // ─── Day State enum ───────────────────────────────────────────────────────────
-enum DayState { delivered, locked, paused, pending, noSub }
+enum DayState { delivered, locked, paused, pending, noSub,cancelled }
 class PauseItem {
   final String fromDate;
   final String toDate;
@@ -52,6 +52,7 @@ class CalDay {
         slot       = j['deliverySlot'] ?? 'MORNING';
 
   bool get isDelivered => status == 'DELIVERED';
+  bool get isCancelled => status == 'CANCELLED';
   bool get isPaused    => status == 'PAUSED';
   bool get isPending   => status == 'PENDING';
   bool get hasBacking  => deliveryId > 0; // has a real DB row
@@ -602,7 +603,9 @@ Widget _buildGrid(DateTime now, int firstWd, int daysInM) {
       DayState state;
       if (cd != null && cd.isDelivered) {
         state = DayState.delivered;
-      } else if (isToday) {
+      }else if (cd != null && cd.isCancelled) {
+        state = DayState.cancelled;
+      }  else if (isToday) {
         state = DayState.pending; // 👈 force blue UI
       }  else if (locked) {
         state = DayState.locked;
@@ -614,7 +617,7 @@ Widget _buildGrid(DateTime now, int firstWd, int daysInM) {
         state = DayState.pending;
       }
 
-      final canEdit = _hasSub && !locked && state != DayState.delivered;
+      final canEdit = _hasSub && !locked && state != DayState.delivered && state !=DayState.cancelled; 
 
       return _DayCell(
         dayNum: dayNum,
@@ -635,6 +638,7 @@ Widget _buildGrid(DateTime now, int firstWd, int daysInM) {
 }
   Widget _buildLegend() => Wrap(spacing: 14, runSpacing: 8, children: [
     _lgd(kGreenLt, const Color(0xFFA5D6A7), kGreen, '✓ Delivered'),
+    _lgd(kRedLt, const Color.fromARGB(255, 244, 244, 244), kRed, 'x Cancelled'),
     _lgd(kPrimaryLt, kPrimary, kPrimary, 'Today (locked)'),
     _lgd(const Color(0xFFFFF8E1), const Color(0xFFFFCC02), const Color(0xFFF9A825), '⏸ Paused'),
     _lgd(const Color(0xFFF0F2F5), const Color(0xFFD0D7DE), kTextLight, '🔒 Locked'),
@@ -754,7 +758,17 @@ class _DayCellState extends State<_DayCell> {
                 style: const TextStyle(fontSize: 6, color: kGreen, fontWeight: FontWeight.w700)),
         ]);
         break;
-
+      
+      case DayState.cancelled:
+        bg = const Color.fromARGB(255, 224, 36, 36);
+        borderColor = const Color.fromARGB(255, 235, 166, 177);
+        borderWidth = 1.5;
+        numColor = Colors.white;
+        centerIcon = Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.cancel_rounded, color: Colors.white, size: 15),
+        ]);
+        break;
+      
       case DayState.locked:
         bg = const Color(0xFFF0F2F5);
         borderColor = const Color(0xFFD0D7DE);
