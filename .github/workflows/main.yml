@@ -46,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aavinam_customer
-          path: build/app/outputs/flutter-apk/app_release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
