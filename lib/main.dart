@@ -14,7 +14,7 @@ class DairyGoCustomerApp extends StatelessWidget {
   const DairyGoCustomerApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'DairyGo Customer',
+    title: 'Aavinam Customer',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,

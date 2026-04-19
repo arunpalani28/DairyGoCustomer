@@ -173,7 +173,7 @@ setState(() {
                       ),
                     ),
                     Text(
-                      _profile?.zone ?? 'DairyGo Madurai',
+                      _profile?.zone ?? 'Aavinam Madurai',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF90CAF9),
