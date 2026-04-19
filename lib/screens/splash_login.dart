@@ -155,12 +155,20 @@ class _SplashState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 🔥 LOGO HERE
-            Image.asset(
-              'app_logo.png',
-              width: 180,
-              height: 180,
-              fit: BoxFit.contain,
-            ),
+           // Image.asset(
+            //  'app_logo.png',
+            //  width: 180,
+             // height: 180,
+        ///    fit: BoxFit.contain,
+           // ),
+
+Image.asset(
+  'assets/app_logo.png',
+  errorBuilder: (context, error, stackTrace) {
+    print("Asset Error: $error"); // Look at your terminal/debug console
+    return Text("Could not find image: $error");
+  },
+),
 
             const SizedBox(height: 40),
 
