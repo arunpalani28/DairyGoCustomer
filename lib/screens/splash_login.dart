@@ -253,8 +253,8 @@ class _LoginState extends State<LoginScreen> {
         SizedBox(height: 12),
             Image.asset(
              'assets/app_logo.png',
-              width: 180,
-              height: 180,
+              width: 220,
+              height: 220,
               fit: BoxFit.contain,
             ),
         // Text('Aavinam Madurai', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
