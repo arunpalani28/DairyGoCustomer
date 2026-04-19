@@ -118,7 +118,7 @@ class _SplashState extends State<SplashScreen> {
   }
 
   Future<void> _check() async {
-    await Future.delayed(const Duration(milliseconds: 9000));
+    await Future.delayed(const Duration(milliseconds: 2000));
     final token = await ApiClient.loadToken();
 
     if (!mounted) return;
@@ -252,7 +252,7 @@ class _LoginState extends State<LoginScreen> {
         // Text('🥛', style: TextStyle(fontSize: 60)),
         SizedBox(height: 12),
             Image.asset(
-              'app_logo.png',
+             'assets/app_logo.png',
               width: 180,
               height: 180,
               fit: BoxFit.contain,
