@@ -105,38 +105,74 @@ class KTextField extends StatelessWidget {
 // ── SPLASH ────────────────────────────────────────────────────────────────────
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-  @override State<SplashScreen> createState() => _SplashState();
+
+  @override
+  State<SplashScreen> createState() => _SplashState();
 }
+
 class _SplashState extends State<SplashScreen> {
-  @override void initState() { super.initState(); _check(); }
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
   Future<void> _check() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 9000));
     final token = await ApiClient.loadToken();
+
     if (!mounted) return;
+
     if (token != null) {
       final userData = await ApiClient.loadUserData();
       final kycStatus = userData?['kycStatus'] ?? 'PENDING';
+
       if (kycStatus == 'VERIFIED') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CustomerShell()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomerShell()),
+        );
       } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => KycGateScreen(userData: userData)));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => KycGateScreen(userData: userData)),
+        );
       }
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     }
   }
-  @override Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kPrimary,
-    body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Text('🥛', style: TextStyle(fontSize: 72)),
-      const SizedBox(height: 18),
-      const Text('Aavinam Madurai', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white)),
-      const SizedBox(height: 6),
-      const Text('Fresh milk, every morning', style: TextStyle(fontSize: 13, color: Color(0xFF90CAF9))),
-      const SizedBox(height: 48),
-      const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-    ])),
-  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🔥 LOGO HERE
+            Image.asset(
+              'app_logo.png',
+              width: 180,
+              height: 180,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(height: 40),
+
+            const CircularProgressIndicator(
+              color: kPrimary,
+              strokeWidth: 2,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── LOGIN (Mobile + OTP, no password) ─────────────────────────────────────────
@@ -202,13 +238,19 @@ class _LoginState extends State<LoginScreen> {
   }
 
   @override Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kPrimary,
+    backgroundColor: kGreenLt,
     body: SafeArea(child: Column(children: [
-      const Expanded(flex: 2, child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text('🥛', style: TextStyle(fontSize: 60)),
+      Expanded(flex: 2, child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        // Text('🥛', style: TextStyle(fontSize: 60)),
         SizedBox(height: 12),
-        Text('Aavinam Madurai', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-        Text('Customer App', style: TextStyle(fontSize: 13, color: Color(0xFF90CAF9))),
+            Image.asset(
+              'app_logo.png',
+              width: 180,
+              height: 180,
+              fit: BoxFit.contain,
+            ),
+        // Text('Aavinam Madurai', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+       // Text('Customer App', style: TextStyle(fontSize: 13, color: Color(0xFF90CAF9))),
       ]))),
       Expanded(flex: 3, child: Container(
         decoration: const BoxDecoration(color: kBg, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
