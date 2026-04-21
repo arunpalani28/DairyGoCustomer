@@ -131,22 +131,47 @@ setState(() {
   }), const SizedBox(height: 10),
             _weekStrip(),
             const SizedBox(height: 18),
-            KSectionTitle(title: 'Quick Order', link: 'See all →',onLink: () {
-    widget.onNavigate?.call(2); // Shop tab
-  },), const SizedBox(height: 10),
-            _miniProductRow(),
-            if (_recentOrders.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              KSectionTitle(title: 'Recent Orders'), const SizedBox(height: 10),
-              _recentOrdersSection(),
-            ],
+  //           KSectionTitle(title: 'Quick Order', link: 'See all →',onLink: () {
+  //   widget.onNavigate?.call(2); // Shop tab
+  // },), const SizedBox(height: 10),
+            // _miniProductRow(),
+            // Always show the title
+const SizedBox(height: 18),
+KSectionTitle(title: 'Recent Orders'), 
+const SizedBox(height: 10),
+
+// Conditional content
+if (_recentOrders.isNotEmpty) 
+  _recentOrdersSection()
+else 
+  _emptyOrdersPlaceholder(), // Professional touch: show a "No orders yet" widget
             const SizedBox(height: 12),
           ]),
         )),
       ]),
     );
   }
-
+Widget _emptyOrdersPlaceholder() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade100),
+    ),
+    child: Column(
+      children: [
+        Icon(Icons.shopping_bag_outlined, color: kPrimary, size: 40),
+        const SizedBox(height: 8),
+        Text(
+          "No recent orders found",
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildHeader() => Container(
   color: kPrimary,
   child: SafeArea(

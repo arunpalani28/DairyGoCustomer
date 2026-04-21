@@ -1,3 +1,4 @@
+import 'package:dairygo_customer/screens/order_screen.dart';
 import 'package:flutter/material.dart';
 import '../widgets/theme.dart';
 import 'home_screen.dart';
@@ -54,6 +55,12 @@ class _CustomerShellState extends State<CustomerShell> {
           onNavigate: _switchTab,
         );
 
+      case 4:
+        return OrdersScreen(
+          key: UniqueKey(),
+          onNavigate: _switchTab,
+        );
+
       default:
         return const SizedBox();
     }
@@ -85,6 +92,7 @@ class _CustomerShellState extends State<CustomerShell> {
                 _ni(1, Icons.calendar_month_rounded, 'Calendar'),
                 _cartNi(),
                 _ni(3, Icons.receipt_long_rounded, 'Bills'),
+                _ni(4, Icons.receipt_long_rounded, 'Orders'),
               ],
             ),
           ),

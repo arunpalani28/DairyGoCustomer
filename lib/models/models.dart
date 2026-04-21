@@ -133,8 +133,8 @@ class OrderItemDetail {
       : id = j['product']?['id'] ?? 0,
         name = j['product']?['name'] ?? '',
         emoji = j['product']?['emoji'] ?? '🛒',
-        qty = j['qty'] ?? 1,
-        unitPrice = (j['unitPrice'] as num?)?.toDouble() ?? 0.0;
+        qty = j['quantity'] ?? 1,
+        unitPrice = (j['total'] as num?)?.toDouble() ?? 0.0;
 }
 
 class RecentOrder {
@@ -143,7 +143,7 @@ class RecentOrder {
   final double totalAmount, deliveryCharge, distanceKm;
   final List<OrderItemDetail> items;
   RecentOrder.fromJson(Map<String, dynamic> j)
-      : id = j['id'] ?? 0,
+      : id = j['orderId'] ?? 0,
         status = j['status'] ?? 'PLACED',
         createdAt = j['createdAt'] ?? '',
         totalAmount = (j['totalAmount'] as num?)?.toDouble() ?? 0.0,
